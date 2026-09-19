@@ -25,9 +25,7 @@ $raw = ['rating' => 4.5, 'reviews' => [
     400 => ['time' => 400, 'author_name' => 'Clara Weiß', 'rating' => 5, 'text' => 'Prima'],
 ]];
 
-$shown = function (string $excludeNames) use ($helper, $raw): array {
-    return array_keys($helper->present($raw, ['minRating' => 1, 'excludeNames' => $excludeNames])['reviews']);
-};
+$shown = fn (string $excludeNames): array => array_keys($helper->present($raw, ['minRating' => 1, 'excludeNames' => $excludeNames])['reviews']);
 
 group('Hiding reviewers by name');
 check('an empty list hides nothing', $shown('') === [400, 300, 200, 100]);

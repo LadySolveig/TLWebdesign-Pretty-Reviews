@@ -95,9 +95,10 @@ check('reviews are keyed by their timestamp', array_keys($merged['reviews']) ===
 check('the summary is stored', $merged['rating'] === 4.7 && $merged['ratingsCount'] === 23);
 
 group('Errors');
-$failure = function (callable $call): string {
+// The message of the exception a fetch ends in, or an empty string when it succeeds.
+$fetchError = function () use ($fetch, $helper): string {
     try {
-        $call();
+        $fetch->invoke($helper, 'ChIJabc', 'key', 'de');
     } catch (RuntimeException $e) {
         return $e->getMessage();
     }
@@ -108,19 +109,19 @@ $failure = function (callable $call): string {
 respondWith(403, json_encode(['error' => ['code' => 403, 'message' => 'Requests to this API are blocked.', 'status' => 'PERMISSION_DENIED']]));
 check(
     'a google error names its status and message',
-    $failure(fn () => $fetch->invoke($helper, 'ChIJabc', 'key', 'de')) === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_STATUS(PERMISSION_DENIED,Requests to this API are blocked.)'
+    $fetchError() === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_STATUS(PERMISSION_DENIED,Requests to this API are blocked.)'
 );
 
 respondWith(500, 'oops');
-check('a non-json error falls back to the http status', $failure(fn () => $fetch->invoke($helper, 'ChIJabc', 'key', 'de')) === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_HTTP_STATUS(500)');
+check('a non-json error falls back to the http status', $fetchError() === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_HTTP_STATUS(500)');
 
 respondWith(200, 'not json');
-check('an unreadable answer is rejected', $failure(fn () => $fetch->invoke($helper, 'ChIJabc', 'key', 'de')) === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_INVALID_RESPONSE');
+check('an unreadable answer is rejected', $fetchError() === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_INVALID_RESPONSE');
 
 respondWith(200, '{}');
-check('an empty place is rejected', $failure(fn () => $fetch->invoke($helper, 'ChIJabc', 'key', 'de')) === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_EMPTY_RESULT');
+check('an empty place is rejected', $fetchError() === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_EMPTY_RESULT');
 
 respondWithFailure();
-check('a network failure is reported', $failure(fn () => $fetch->invoke($helper, 'ChIJabc', 'key', 'de')) === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_REQUEST_FAILED');
+check('a network failure is reported', $fetchError() === 'MOD_PRETTYREVIEWS_ERROR_GOOGLE_REQUEST_FAILED');
 
 finish();
